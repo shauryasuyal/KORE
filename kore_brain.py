@@ -2,7 +2,7 @@ import google.generativeai as genai
 import json
 
 # --- CONFIGURATION ---
-API_KEY = "AIzaSyBJLtqEVxuADFyKoSSV8bYUOv_rVt3I3o0" 
+API_KEY = "AIzaSyDjA8x7XGGo46jwiYOlhAc3wMXa80DdSCQ" 
 
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
@@ -84,4 +84,5 @@ def decide_action(user_command, context=None):
         return json.loads(cleaned)
     except Exception as e:
         print(f"   [Brain Error] {e}")
+
         return None
