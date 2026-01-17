@@ -1,0 +1,14 @@
+{
+  "common_locations": {
+    "downloads": "C:\\Users\\shauryasuyal/Downloads",
+    "documents": "C:\\Users\\shauryasuyal/Documents",
+    "desktop": "C:\\Users\\shauryasuyal/Desktop",
+    "recent_files": []
+  },
+  "user_preferences": {
+    "default_browser": "chrome",
+    "default_editor": "notepad",
+    "file_search_depth": 3
+  },
+  "learned_commands": {}
+}

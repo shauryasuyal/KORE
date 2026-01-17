@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kore OS Demo</title>
+    <style>
+        :root {
+            --bg-color: #f3f3f3;
+            --win-bg: rgba(255, 255, 255, 0.85);
+            --glass: rgba(243, 249, 255, 0.6);
+            --accent: #0078d4;
+            --text: #333;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') no-repeat center center/cover;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- DESKTOP ICONS --- */
+        .desktop {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .icon {
+            width: 80px;
+            text-align: center;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 5px;
+            transition: 0.2s;
+        }
+
+        .icon:hover { background: rgba(255,255,255,0.2); }
+        .icon img { width: 48px; height: 48px; margin-bottom: 5px; }
+
+        /* --- WINDOWS (Generic) --- */
+        .window {
+            position: absolute;
+            top: 100px;
+            left: 200px;
+            width: 600px;
+            height: 400px;
+            background: var(--win-bg);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.5);
+            animation: popIn 0.2s ease-out;
+            resize: both;
+            overflow: auto;
+            z-index: 10;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.9); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .title-bar {
+            height: 32px;
+            background: rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            cursor: grab;
+        }
+
+        .controls span {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            cursor: pointer;
+        }
+        .close-btn { background: #ff5f57; }
+        .min-btn { background: #ffbd2e; }
+        .max-btn { background: #28c940; }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            font-family: monospace;
+            background: white;
+        }
+
+        /* --- KORE ASSISTANT WIDGET --- */
+        .kore-widget {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            width: 350px;
+            height: 500px;
+            background: rgba(30, 30, 30, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            border: 1px solid #444;
+            transition: all 0.3s ease;
+        }
+
+        .kore-header {
+            padding: 15px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .kore-avatar {
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #00d2ff 0%, #3a7bd5 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #00d2ff;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px #00d2ff; }
+            50% { box-shadow: 0 0 25px #00d2ff; }
+            100% { box-shadow: 0 0 10px #00d2ff; }
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .msg {
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 80%;
+            line-height: 1.4;
+        }
+
+        .msg.kore {
+            background: #333;
+            align-self: flex-start;
+            border-left: 3px solid #00d2ff;
+        }
+
+        .msg.user {
+            background: #0078d4;
+            align-self: flex-end;
+        }
+
+        .input-area {
+            padding: 15px;
+            border-top: 1px solid #444;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            background: #444;
+            color: white;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            background: #0078d4;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover { background: #106ebe; }
+
+        /* --- TASKBAR --- */
+        .taskbar {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 50px;
+            background: rgba(243, 249, 255, 0.85);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 99;
+        }
+
+        .tb-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .tb-icon:hover { background: rgba(0,0,0,0.1); transform: translateY(-3px); }
+        .tb-icon.active { background: rgba(0,0,0,0.1); border-bottom: 3px solid #0078d4; }
+
+        /* --- APP SPECIFIC STYLES --- */
+        #regedit .content { background: #fff; color: #000; font-family: 'Consolas', monospace; }
+        .reg-tree { color: #666; margin-left: 10px; }
+        .reg-key { color: #333; font-weight: bold; }
+        .reg-highlight { background: #0078d4; color: white; display: inline-block; width: 100%; }
+
+        #cmd .content { background: #000; color: #0f0; }
+    </style>
+</head>
+<body>
+
+    <div class="desktop">
+        <div class="icon" onclick="openWindow('explorer')">
+            <div style="font-size: 32px;">📁</div>
+            This PC
+        </div>
+        <div class="icon">
+            <div style="font-size: 32px;">🗑️</div>
+            Recycle Bin
+        </div>
+        <div class="icon" onclick="openWindow('regedit')">
+            <div style="font-size: 32px;">⚙️</div>
+            RegEdit
+        </div>
+    </div>
+
+    <div class="window" id="regedit" style="top: 150px; left: 300px;">
+        <div class="title-bar" onmousedown="dragWindow(event, 'regedit')">
+            <span>Registry Editor</span>
+            <div class="controls">
+                <span class="min-btn"></span><span class="max-btn"></span><span class="close-btn" onclick="closeWindow('regedit')"></span>
+            </div>
+        </div>
+        <div class="content" id="regedit-content">
+            Computer<br>
+            └── HKEY_CURRENT_USER<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;└── Software<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Microsoft<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Windows<br>
+        </div>
+    </div>
+
+    <div class="window" id="cmd" style="top: 200px; left: 400px; width: 500px; height: 300px;">
+        <div class="title-bar" onmousedown="dragWindow(event, 'cmd')">
+            <span>Command Prompt</span>
+            <div class="controls">
+                <span class="min-btn"></span><span class="max-btn"></span><span class="close-btn" onclick="closeWindow('cmd')"></span>
+            </div>
+        </div>
+        <div class="content" id="cmd-content">
+            Microsoft Windows [Version 11.0.22000]<br>
+            (c) Microsoft Corporation. All rights reserved.<br><br>
+            C:\Users\Shaurya><br>
+        </div>
+    </div>
+
+    <div class="kore-widget">
+        <div class="kore-header">
+            <div class="kore-avatar"></div>
+            <div>
+                <div style="font-weight: bold;">Kore Assistant</div>
+                <div style="font-size: 11px; color: #aaa;">• Online | System Access: FULL</div>
+            </div>
+        </div>
+        <div class="chat-area" id="chatArea">
+            <div class="msg kore">Hello Shaurya! I am connected to your Windows System. I can manage files, fix registry errors, or run scripts. Try saying "Fix Task Manager".</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask Kore to fix something..." onkeypress="handleEnter(event)">
+            <button onclick="sendMessage()">➤</button>
+        </div>
+    </div>
+
+    <div class="taskbar">
+        <div class="tb-icon" style="color: #0078d4;">⊞</div>
+        <div class="tb-icon">🔍</div>
+        <div class="tb-icon" onclick="openWindow('explorer')">📁</div>
+        <div class="tb-icon">🌐</div>
+        <div class="tb-icon active" style="border-bottom-color: #00d2ff;">🤖</div>
+    </div>
+
+    <script>
+        // --- CHAT LOGIC ---
+        function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
+
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.toLowerCase();
+            if(!text) return;
+
+            // Add User Message
+            addMessage(input.value, 'user');
+            input.value = '';
+
+            // Simulate Processing
+            setTimeout(() => {
+                processCommand(text);
+            }, 800);
+        }
+
+        function addMessage(text, sender) {
+            const area = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = `msg ${sender}`;
+            div.innerText = text;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // --- THE BRAIN (SIMULATION) ---
+        function processCommand(text) {
+            if (text.includes("task manager") && (text.includes("fix") || text.includes("enable"))) {
+                addMessage("I detected that Task Manager is disabled via Registry. I will fix it now. Watch the window...", "kore");
+                runDemo_RegFix();
+            } 
+            else if (text.includes("temp") || text.includes("clean") || text.includes("slow")) {
+                addMessage("Your system is cluttered. I will clear the temporary files via Command Prompt.", "kore");
+                runDemo_CleanTemp();
+            } 
+            else if (text.includes("hello") || text.includes("hi")) {
+                addMessage("Hello! I am ready to help. Try asking me to 'Clean temp files' or 'Fix registry errors'.", "kore");
+            }
+            else {
+                addMessage("I can hear you, but for this web demo, I only know how to 'Fix Task Manager' and 'Clean Temp Files'.", "kore");
+            }
+        }
+
+        // --- THE HANDS (VISUAL DEMOS) ---
+        
+        // Demo 1: Registry Fix
+        function runDemo_RegFix() {
+            // 1. Open Regedit Window
+            setTimeout(() => {
+                openWindow('regedit');
+                document.getElementById('regedit-content').innerHTML = `Computer<br>└── HKEY_CURRENT_USER<br>&nbsp;&nbsp;&nbsp;&nbsp;└── Software`;
+            }, 1000);
+
+            // 2. Simulate Navigation (adding text)
+            setTimeout(() => {
+                const content = document.getElementById('regedit-content');
+                content.innerHTML += `<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Microsoft<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Windows<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── Policies<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── System`;
+                content.scrollTop = content.scrollHeight;
+            }, 2500);
+
+            // 3. Highlight Key
+            setTimeout(() => {
+                const content = document.getElementById('regedit-content');
+                content.innerHTML += `<br><br><span class="reg-highlight">DisableTaskMgr: 0x00000001 (1)</span>`;
+                content.scrollTop = content.scrollHeight;
+            }, 4000);
+
+            // 4. Change Value
+            setTimeout(() => {
+                const content = document.getElementById('regedit-content');
+                content.innerHTML = content.innerHTML.replace('DisableTaskMgr: 0x00000001 (1)', 'DisableTaskMgr: 0x00000000 (0)');
+                addMessage("Value changed to 0. Task Manager is now enabled.", "kore");
+            }, 5500);
+
+            // 5. Close
+            setTimeout(() => closeWindow('regedit'), 7500);
+        }
+
+        // Demo 2: Clean Temp
+        function runDemo_CleanTemp() {
+            setTimeout(() => {
+                openWindow('cmd');
+            }, 1000);
+
+            const typeWriter = (txt, speed) => {
+                const cmd = document.getElementById('cmd-content');
+                let i = 0;
+                const timer = setInterval(() => {
+                    if (i < txt.length) {
+                        cmd.innerHTML += txt.charAt(i);
+                        i++;
+                    } else {
+                        clearInterval(timer);
+                        cmd.innerHTML += "<br>";
+                    }
+                }, speed);
+            };
+
+            setTimeout(() => typeWriter("cd %temp%", 50), 1500);
+            setTimeout(() => {
+                document.getElementById('cmd-content').innerHTML += "<br>C:\\Users\\Shaurya\\AppData\\Local\\Temp><br>";
+                typeWriter("del /q /f *.*", 50);
+            }, 3000);
+            
+            setTimeout(() => {
+                document.getElementById('cmd-content').innerHTML += "<br>Deleted file: skype_log.txt<br>Deleted file: cache_tmp.dat<br>Deleted file: error_dump.dmp<br><br>Success: Temp folder cleaned.<br><br>C:\\Users\\Shaurya>";
+                addMessage("Cleanup complete. 145MB of space recovered.", "kore");
+            }, 5000);
+
+            setTimeout(() => closeWindow('cmd'), 8000);
+        }
+
+        // --- WINDOW MANAGER ---
+        function openWindow(id) {
+            const win = document.getElementById(id);
+            win.style.display = 'flex';
+            // Bring to front
+            win.style.zIndex = 50; 
+        }
+
+        function closeWindow(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        // Simple Draggable Logic
+        function dragWindow(e, id) {
+            const el = document.getElementById(id);
+            let startX = e.clientX;
+            let startY = e.clientY;
+            let startLeft = el.offsetLeft;
+            let startTop = el.offsetTop;
+
+            function mouseMove(e) {
+                el.style.left = (startLeft + e.clientX - startX) + 'px';
+                el.style.top = (startTop + e.clientY - startY) + 'px';
+            }
+
+            function mouseUp() {
+                document.removeEventListener('mousemove', mouseMove);
+                document.removeEventListener('mouseup', mouseUp);
+            }
+
+            document.addEventListener('mousemove', mouseMove);
+            document.addEventListener('mouseup', mouseUp);
+        }
+    </script>
+</body>
+</html>
