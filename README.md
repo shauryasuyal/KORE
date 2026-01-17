@@ -39,6 +39,8 @@ numpy
 
 ## Screenshots
 
+NOT CURRENTLY ACTIVE IN THE PROGRAM
+
 ![App Screenshot](https://i.postimg.cc/sfScCXWn/Whats-App-Image-2026-01-17-at-7-24-27-AM.jpg)
 
 Extra Avatar for KORE, made on Figma - https://drive.google.com/drive/folders/1SCxKVxKrcTGfsqH3YHwJ6JdUi5SAqHSC?usp=sharing
