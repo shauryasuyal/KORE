@@ -46,4 +46,11 @@ NOT CURRENTLY ACTIVE IN THE PROGRAM
 Extra Avatar for KORE, made on Figma - https://drive.google.com/drive/folders/1SCxKVxKrcTGfsqH3YHwJ6JdUi5SAqHSC?usp=sharing
   
 
+## Authors
+
+- [@shauryasuyal](https://github.com/shauryasuyal)
+- [@vedantawasthi](https://github.com/VedantAwasthi-26)
+- [@paarthgupta](https://github.com/Paarthgupta-coder)
+
+
 
