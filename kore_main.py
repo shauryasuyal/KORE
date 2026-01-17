@@ -28,7 +28,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 overlay_instance = None
 voice_instance = None
 voice_mode = False
-command_lock = threading.Lock()  # Prevent concurrent command execution
+command_lock = threading.Lock()
 
 def ask_gemini(user_input):
     """Enhanced AI decision making with system context"""
@@ -95,11 +95,11 @@ def ask_gemini(user_input):
     - Use CHANGE_WALLPAPER with null param when asked to "change wallpaper" without specifics
     - Use CHANGE_WALLPAPER with image path when user specifies which image to use
     - Be friendly and conversational in your "thought" field even when performing tasks
-    - Keep your "thought" responses concise and natural for voice output (under 20 words)
+    - Keep your "thought" responses concise and natural (under 100 characters for brevity)
     
     Return ONLY valid JSON:
     {{
-        "thought": "Brief reasoning or conversational response",
+        "thought": "Brief reasoning or conversational response (under 100 chars)",
         "tool": "TOOL_NAME or CHAT",
         "parameter": "value or dict object or null"
     }}
@@ -366,6 +366,14 @@ def handle_voice_command():
     finally:
         command_lock.release()
 
+def handle_text_command(command):
+    """Handle text command from the chat input"""
+    if not command or not command.strip():
+        return
+    
+    print(f"\n   [Text Command] {command}")
+    threading.Thread(target=process_command, args=(command, False), daemon=True).start()
+
 def process_command(command, speak=False):
     """Process a command (from text or voice)"""
     if not command or not command.strip():
@@ -384,10 +392,15 @@ def process_command(command, speak=False):
             voice_instance.speak("Sorry, I had trouble understanding that")
         return
     
-    # Speak the thought
+    # Display thought in bubble
     thought = plan.get('thought', 'Processing...')
     print(f"KORE: {thought}")
-    if speak and voice_instance and overlay_instance:
+    
+    if overlay_instance:
+        overlay_instance.show_thought(thought, duration=180)
+    
+    # Speak the thought if in voice mode
+    if speak and voice_instance:
         overlay_instance.set_speaking(True)
         voice_instance.speak(thought)
         overlay_instance.set_speaking(False)
@@ -396,13 +409,14 @@ def process_command(command, speak=False):
     execute_action(plan.get('tool'), plan.get('parameter'), speak=speak)
 
 def logic_thread():
-    """Main logic loop for text input"""
+    """Main logic loop for text input from console"""
     time.sleep(2)
     print("\n" + "="*60)
     print(" KORE ADVANCED SYSTEM ASSISTANT ONLINE")
-    print(" - Type commands in this console")
+    print(" - Single-click the robot for chat mode")
+    print(" - Double-click the robot for voice mode")
     print(" - Press Shift+Enter for voice mode")
-    print(" - Double-click Kore avatar for voice mode")
+    print(" - Type commands in this console (optional)")
     print(" - Type 'exit' to quit")
     print("="*60 + "\n")
     
@@ -417,7 +431,6 @@ def logic_thread():
                 threading.Thread(target=process_command, args=(command, False), daemon=True).start()
             
         except EOFError:
-            # Handle Ctrl+C or input closure
             break
         except Exception as e:
             print(f"   [Loop Error] {e}")
@@ -451,20 +464,20 @@ if __name__ == "__main__":
     overlay.raise_()
     overlay.activateWindow()
     
-    # Connect signals to voice command handler
+    # Connect signals to handlers
     overlay.double_click.connect(lambda: threading.Thread(target=handle_voice_command, daemon=True).start())
     overlay.voice_hotkey.connect(lambda: threading.Thread(target=handle_voice_command, daemon=True).start())
+    overlay.text_command.connect(handle_text_command)  # New: connect text input
     
     overlay.show()
     overlay_instance = overlay
     
     print(f"\n   [System] Overlay created at size: {screen_size.width()}x{screen_size.height()}")
-    print(f"   [System] Look for Kore in the BOTTOM LEFT corner of your screen!")
-    print(f"   [System] Press Shift+Enter or Double-click the laptop avatar for voice mode\n")
+    print(f"   [System] Look for Kore in the BOTTOM RIGHT corner of your screen!")
+    print(f"   [System] Single-click for chat mode, Double-click or Shift+Enter for voice mode\n")
     
     # Start text input thread
     thread = threading.Thread(target=logic_thread, daemon=True)
     thread.start()
     
-
     sys.exit(app.exec())
