@@ -84,5 +84,4 @@ def decide_action(user_command, context=None):
         return json.loads(cleaned)
     except Exception as e:
         print(f"   [Brain Error] {e}")
-
         return None
