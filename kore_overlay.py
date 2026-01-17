@@ -1,6 +1,6 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QWidget
-from PyQt6.QtCore import Qt, QTimer, QPointF, QRectF, pyqtSignal, QEvent
+from PyQt6.QtWidgets import QApplication, QWidget, QLineEdit, QTextEdit
+from PyQt6.QtCore import Qt, QTimer, QPointF, QRectF, pyqtSignal, QEvent, QPropertyAnimation, QEasingCurve
 from PyQt6.QtGui import QPainter, QColor, QPen, QBrush, QFont, QLinearGradient, QPolygonF, QCursor, QPainterPath, QKeySequence
 
 def lerp(start, end, factor):
@@ -10,7 +10,8 @@ class KoreOverlay(QWidget):
     # Signals for interaction
     single_click = pyqtSignal()
     double_click = pyqtSignal()
-    voice_hotkey = pyqtSignal()  # New signal for Shift+Enter
+    voice_hotkey = pyqtSignal()
+    text_command = pyqtSignal(str)  # New signal for text commands
     
     def __init__(self):
         super().__init__()
@@ -28,8 +29,6 @@ class KoreOverlay(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         
-        # DON'T set WA_TransparentForMouseEvents - we need clicks!
-        
         self.hand_pos = QPointF(100, 900) 
         self.target_pos = QPointF(100, 900)
         
@@ -44,8 +43,12 @@ class KoreOverlay(QWidget):
         self.is_listening = False
         self.is_speaking = False
         
-        # Animation pulse for listening
+        # Animation pulse for listening - simplified
         self.pulse_counter = 0
+        
+        # Thought bubble
+        self.current_thought = ""
+        self.thought_display_timer = 0
         
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_animation)
@@ -54,35 +57,72 @@ class KoreOverlay(QWidget):
         self.blink_counter = 0
         self.next_blink = 180
         
-        # Clickable area for the laptop sprite (will be set in paintEvent)
-        self.sprite_x = 50
+        # Sprite positioning - MOVED TO RIGHT SIDE AND MADE SMALLER
+        self.sprite_scale = 2.0  # Reduced from 3.0
+        self.sprite_x = 0  # Will be calculated based on window width (right side)
         self.sprite_y = 0  # Will be calculated based on window height
-        self.sprite_scale = 3.0  # Made bigger
         self.clickable_rect = QRectF()
         
         # Track Shift key state for hotkey
         self.shift_pressed = False
         
-        # Install event filter to catch global key events
-        self.installEventFilter(self)
+        # Text input box
+        self.text_input = QLineEdit(self)
+        self.text_input.setStyleSheet("""
+            QLineEdit {
+                background-color: rgba(30, 41, 59, 230);
+                color: white;
+                border: 3px solid rgb(148, 163, 184);
+                border-radius: 15px;
+                padding: 10px 15px;
+                font-family: 'Consolas';
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QLineEdit:focus {
+                border: 3px solid rgb(34, 197, 94);
+            }
+        """)
+        self.text_input.setPlaceholderText("Type your command here...")
+        self.text_input.hide()
+        self.text_input.returnPressed.connect(self.on_text_submit)
         
-        # Make window focusable to receive key events
+        # Install event filter
+        self.installEventFilter(self)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
     def eventFilter(self, obj, event):
         """Filter to catch keyboard events"""
         if event.type() == QEvent.Type.KeyPress:
-            # Check for Shift+Enter
+            # Check for Shift+Enter for voice
             if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
                 if event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
                     print("   [Overlay] Shift+Enter pressed!")
                     self.voice_hotkey.emit()
                     return True
+            # ESC to close text input
+            elif event.key() == Qt.Key.Key_Escape:
+                if self.text_input.isVisible():
+                    self.text_input.hide()
+                    self.text_input.clear()
+                    return True
         return super().eventFilter(obj, event)
 
     def update_animation(self):
-        # Update sprite position based on window size
-        self.sprite_y = self.height() - 250
+        # Update sprite position based on window size - RIGHT SIDE
+        self.sprite_x = self.width() - 180 * self.sprite_scale  # Right side with padding
+        self.sprite_y = self.height() - 200  # Bottom with padding
+        
+        # Update text input position if visible
+        if self.text_input.isVisible():
+            input_width = 400
+            input_height = 50
+            self.text_input.setGeometry(
+                int(self.sprite_x - input_width - 20),
+                int(self.sprite_y + 50),
+                input_width,
+                input_height
+            )
         
         new_x = lerp(self.hand_pos.x(), self.target_pos.x(), 0.1)
         new_y = lerp(self.hand_pos.y(), self.target_pos.y(), 0.1)
@@ -100,6 +140,12 @@ class KoreOverlay(QWidget):
         # Pulse animation when listening
         if self.is_listening:
             self.pulse_counter += 1
+        
+        # Thought bubble timer
+        if self.thought_display_timer > 0:
+            self.thought_display_timer -= 1
+            if self.thought_display_timer == 0:
+                self.current_thought = ""
         
         if self.emotion == 'idle' and not self.is_listening:
             if self.blink_counter % 120 == 0:
@@ -137,30 +183,58 @@ class KoreOverlay(QWidget):
     def set_speaking(self, is_speaking):
         """Set speaking state"""
         self.is_speaking = is_speaking
+    
+    def show_thought(self, text, duration=180):
+        """Display a thought bubble above the sprite"""
+        self.current_thought = text
+        self.thought_display_timer = duration  # frames (about 3 seconds at 60fps)
+    
+    def show_text_input(self):
+        """Show the text input box"""
+        self.text_input.show()
+        self.text_input.setFocus()
+        self.text_input.clear()
+    
+    def on_text_submit(self):
+        """Handle text input submission"""
+        text = self.text_input.text().strip()
+        if text:
+            print(f"   [Overlay] Text command: {text}")
+            self.text_command.emit(text)
+            self.text_input.clear()
+            self.text_input.hide()
 
     def mousePressEvent(self, event):
         """Handle mouse clicks on the sprite"""
         if event.button() == Qt.MouseButton.LeftButton:
-            pos = QPointF(event.pos())  # Convert QPoint to QPointF
+            pos = QPointF(event.pos())
             if self.clickable_rect.contains(pos):
                 print("   [Overlay] Sprite clicked!")
                 self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
     
     def mouseReleaseEvent(self, event):
-        """Reset cursor on release"""
+        """Reset cursor on release and show text input on single click"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = QPointF(event.pos())
+            if self.clickable_rect.contains(pos):
+                # Single click - show text input
+                self.show_text_input()
         self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
     
     def mouseDoubleClickEvent(self, event):
         """Handle double clicks - activate voice mode"""
         if event.button() == Qt.MouseButton.LeftButton:
-            pos = QPointF(event.pos())  # Convert QPoint to QPointF
+            pos = QPointF(event.pos())
             if self.clickable_rect.contains(pos):
                 print("   [Overlay] Sprite double-clicked! Activating voice mode...")
                 self.double_click.emit()
+                # Hide text input if visible
+                if self.text_input.isVisible():
+                    self.text_input.hide()
     
     def mouseMoveEvent(self, event):
         """Change cursor when hovering over sprite"""
-        pos = QPointF(event.pos())  # Convert QPoint to QPointF
+        pos = QPointF(event.pos())
         if self.clickable_rect.contains(pos):
             self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         else:
@@ -170,42 +244,106 @@ class KoreOverlay(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
-        # Fill background with transparent (this is important!)
+        # Fill background with transparent
         painter.fillRect(self.rect(), QColor(0, 0, 0, 0))
 
-        # Draw arm with bright visible color
-        arm_pen = QPen(QColor(0, 255, 255, 200))  # Increased opacity
-        arm_pen.setWidth(12)  # Made thicker
+        # Draw arm
+        arm_pen = QPen(QColor(0, 255, 255, 200))
+        arm_pen.setWidth(12)
         painter.setPen(arm_pen)
-        painter.drawLine(0, self.height(), int(self.hand_pos.x()), int(self.hand_pos.y()))
+        painter.drawLine(self.width(), self.height(), int(self.hand_pos.x()), int(self.hand_pos.y()))
 
-        # Draw hand - BRIGHT and VISIBLE
-        painter.setBrush(QBrush(QColor(0, 255, 255, 255)))  # Fully opaque
+        # Draw hand
+        painter.setBrush(QBrush(QColor(0, 255, 255, 255)))
         painter.setPen(QPen(QColor(255, 255, 255), 3))
         painter.drawEllipse(self.hand_pos, 50, 50)
         
+        # Draw thought bubble BEFORE sprite (so it appears above)
+        if self.current_thought:
+            self.draw_thought_bubble(painter)
+        
+        # Draw minimal listening indicator
+        if self.is_listening:
+            self.draw_minimal_listening_indicator(painter)
+        
         # Draw sprite
         self.draw_sprite(painter)
-        
-        # Draw listening indicator
-        if self.is_listening:
-            self.draw_listening_indicator(painter)
 
-    def draw_listening_indicator(self, painter):
-        """Draw pulsing ring around sprite when listening"""
-        pulse = abs((self.pulse_counter % 60) - 30) / 30.0  # 0 to 1 and back
-        
+    def draw_minimal_listening_indicator(self, painter):
+        """Draw minimal glowing microphone icon when listening"""
         center_x = self.sprite_x + 70 * self.sprite_scale
-        center_y = self.sprite_y
-        radius = 100 + pulse * 30
+        center_y = self.sprite_y - 100
         
-        painter.setPen(QPen(QColor(34, 197, 94, int(150 + pulse * 105)), 5))
+        # Pulse effect
+        pulse = abs((self.pulse_counter % 40) - 20) / 20.0  # 0 to 1 and back
+        
+        # Microphone icon
+        mic_size = 25 + pulse * 8
+        glow_alpha = int(100 + pulse * 155)
+        
+        # Glow effect
+        painter.setPen(QPen(QColor(34, 197, 94, glow_alpha), 8))
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawEllipse(QPointF(center_x, center_y), radius, radius)
+        painter.drawEllipse(QPointF(center_x, center_y), mic_size + 10, mic_size + 10)
         
-        # Inner ring
-        painter.setPen(QPen(QColor(134, 239, 172, int(100 + pulse * 155)), 3))
-        painter.drawEllipse(QPointF(center_x, center_y), radius - 15, radius - 15)
+        # Microphone body
+        painter.setBrush(QBrush(QColor(34, 197, 94, 255)))
+        painter.setPen(QPen(QColor(255, 255, 255), 2))
+        painter.drawEllipse(QPointF(center_x, center_y - 5), 12, 18)
+        
+        # Microphone stand
+        painter.drawRect(int(center_x - 3), int(center_y + 13), 6, 8)
+        painter.drawRect(int(center_x - 8), int(center_y + 21), 16, 3)
+        
+        # Sound waves
+        for i in range(3):
+            wave_dist = 30 + i * 12 + pulse * 8
+            wave_alpha = int(200 - i * 50 - pulse * 50)
+            painter.setPen(QPen(QColor(34, 197, 94, wave_alpha), 2))
+            painter.drawArc(int(center_x - wave_dist), int(center_y - wave_dist), 
+                          int(wave_dist * 2), int(wave_dist * 2), 45 * 16, 90 * 16)
+            painter.drawArc(int(center_x - wave_dist), int(center_y - wave_dist), 
+                          int(wave_dist * 2), int(wave_dist * 2), 225 * 16, 90 * 16)
+
+    def draw_thought_bubble(self, painter):
+        """Draw thought bubble above the sprite"""
+        bubble_x = self.sprite_x - 50
+        bubble_y = self.sprite_y - 180 * self.sprite_scale
+        
+        # Measure text
+        painter.setFont(QFont("Consolas", 11, QFont.Weight.Bold))
+        text_rect = painter.fontMetrics().boundingRect(
+            0, 0, 350, 200,
+            Qt.TextFlag.TextWordWrap,
+            self.current_thought
+        )
+        
+        bubble_width = max(text_rect.width() + 40, 200)
+        bubble_height = text_rect.height() + 30
+        
+        # Draw thought bubble background
+        painter.setBrush(QBrush(QColor(255, 255, 255, 240)))
+        painter.setPen(QPen(QColor(100, 116, 139), 3))
+        painter.drawRoundedRect(int(bubble_x), int(bubble_y), 
+                               int(bubble_width), int(bubble_height), 20, 20)
+        
+        # Draw thought bubble tail (small circles)
+        tail_x = self.sprite_x + 70 * self.sprite_scale
+        tail_y = self.sprite_y - 30
+        
+        painter.setBrush(QBrush(QColor(255, 255, 255, 240)))
+        painter.drawEllipse(QPointF(tail_x - 10, tail_y - 20), 8, 8)
+        painter.drawEllipse(QPointF(tail_x, tail_y - 35), 12, 12)
+        painter.drawEllipse(QPointF(tail_x + 5, tail_y - 55), 15, 15)
+        
+        # Draw text
+        painter.setPen(QPen(QColor(30, 41, 59)))
+        painter.drawText(
+            int(bubble_x + 20), int(bubble_y + 20),
+            int(bubble_width - 40), int(bubble_height - 20),
+            Qt.TextFlag.TextWordWrap,
+            self.current_thought
+        )
 
     def draw_sprite(self, painter):
         sprite_x = self.sprite_x
@@ -216,31 +354,24 @@ class KoreOverlay(QWidget):
         painter.translate(sprite_x, sprite_y)
         painter.scale(scale, scale)
         
-        # Add glow effect when listening - BRIGHTER
-        if self.is_listening:
-            glow_intensity = abs((self.pulse_counter % 40) - 20) / 20.0
-            painter.setPen(QPen(QColor(34, 197, 94, int(100 + glow_intensity * 155)), 12))
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.drawRoundedRect(15, 0, 110, 70, 8, 8)
-        
-        # LAPTOP SCREEN (top part) - MUCH BRIGHTER
+        # LAPTOP SCREEN (top part)
         screen_gradient = QLinearGradient(0, 5, 0, 65)
-        screen_gradient.setColorAt(0, QColor(71, 85, 105))  # Lighter
-        screen_gradient.setColorAt(1, QColor(51, 65, 85))   # Lighter
+        screen_gradient.setColorAt(0, QColor(71, 85, 105))
+        screen_gradient.setColorAt(1, QColor(51, 65, 85))
         
         painter.setBrush(QBrush(screen_gradient))
-        painter.setPen(QPen(QColor(148, 163, 184), 4))  # Bright border
+        painter.setPen(QPen(QColor(148, 163, 184), 4))
         painter.drawRoundedRect(20, 5, 100, 60, 4, 4)
         
-        # Screen bezel - VISIBLE
+        # Screen bezel
         painter.setBrush(QBrush(QColor(30, 41, 59)))
         painter.setPen(QPen(QColor(100, 116, 139), 2))
         painter.drawRoundedRect(25, 10, 90, 50, 2, 2)
         
-        # LAPTOP BASE/KEYBOARD (bottom part) - BRIGHTER
+        # LAPTOP BASE/KEYBOARD (bottom part)
         body_gradient = QLinearGradient(0, 65, 0, 73)
-        body_gradient.setColorAt(0, QColor(203, 213, 225))  # Much lighter
-        body_gradient.setColorAt(1, QColor(148, 163, 184))  # Much lighter
+        body_gradient.setColorAt(0, QColor(203, 213, 225))
+        body_gradient.setColorAt(1, QColor(148, 163, 184))
         
         # Top surface of base
         base_top = QPolygonF([QPointF(15, 65), QPointF(20, 68), QPointF(120, 68), QPointF(125, 65)])
@@ -248,26 +379,26 @@ class KoreOverlay(QWidget):
         painter.setPen(QPen(QColor(100, 116, 139), 3))
         painter.drawPolygon(base_top)
         
-        # Front of base - VISIBLE
+        # Front of base
         base_front = QPolygonF([QPointF(20, 68), QPointF(22, 75), QPointF(118, 75), QPointF(120, 68)])
         painter.setBrush(QBrush(QColor(100, 116, 139)))
         painter.setPen(QPen(QColor(71, 85, 105), 2))
         painter.drawPolygon(base_front)
         
-        # Keyboard area - BRIGHT
+        # Keyboard area
         painter.setBrush(QBrush(QColor(51, 65, 85)))
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRect(25, 69, 90, 4)
         
-        # Eyes on screen - BRIGHT WHITE
+        # Eyes on screen
         is_blinking = self.blink_timer > 0
         eye_scale_y = self.get_eye_scale()
         pupil_size = self.get_pupil_size()
         
-        # Left eye - BRIGHT
+        # Left eye
         left_eye_x = 50 + self.look_x
         left_eye_y = 30 + self.look_y
-        painter.setBrush(QBrush(QColor(255, 255, 255, 255)))  # Fully opaque
+        painter.setBrush(QBrush(QColor(255, 255, 255, 255)))
         painter.setPen(QPen(QColor(200, 200, 200), 1))
         
         if is_blinking:
@@ -275,16 +406,16 @@ class KoreOverlay(QWidget):
         else:
             painter.drawEllipse(int(left_eye_x - 8), int(left_eye_y - 8 * eye_scale_y), 
                               16, int(16 * eye_scale_y))
-            # Pupil - BLACK
+            # Pupil
             painter.setBrush(QBrush(QColor(0, 0, 0)))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(int(left_eye_x + 1 - pupil_size), int(left_eye_y - pupil_size),
                               pupil_size * 2, pupil_size * 2)
-            # Shine - BRIGHT
+            # Shine
             painter.setBrush(QBrush(QColor(255, 255, 255, 255)))
             painter.drawEllipse(int(left_eye_x - 1 - 2), int(left_eye_y - 1.5 - 2), 5, 5)
         
-        # Right eye - BRIGHT
+        # Right eye
         right_eye_x = 90 + self.look_x
         right_eye_y = 30 + self.look_y
         painter.setBrush(QBrush(QColor(255, 255, 255, 255)))
@@ -304,21 +435,21 @@ class KoreOverlay(QWidget):
             painter.setBrush(QBrush(QColor(255, 255, 255, 255)))
             painter.drawEllipse(int(right_eye_x - 1 - 2), int(right_eye_y - 1.5 - 2), 5, 5)
         
-        # Mouth - BRIGHT
+        # Mouth
         painter.setPen(QPen(QColor(255, 255, 255), 3, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         
         mouth_path = self.get_mouth_path()
         painter.drawPath(mouth_path)
         
-        # Blush when happy - BRIGHT
+        # Blush when happy
         if self.emotion == 'happy':
             painter.setBrush(QBrush(QColor(252, 165, 165, 200)))
             painter.setPen(Qt.PenStyle.NoPen)
             painter.drawEllipse(30, 39, 10, 8)
             painter.drawEllipse(94, 39, 10, 8)
         
-        # Emotion decorations - BRIGHTER
+        # Emotion decorations
         if self.emotion == 'thinking':
             painter.setBrush(QBrush(QColor(255, 255, 255, 230)))
             painter.setPen(Qt.PenStyle.NoPen)
@@ -350,36 +481,29 @@ class KoreOverlay(QWidget):
                 painter.drawEllipse(int(48), int(38 + tear_offset), 5, 10)
                 painter.drawEllipse(int(92), int(38 + tear_offset + 1), 5, 10)
         
-        # Microphone icon when listening - BRIGHT
-        if self.is_listening:
-            painter.setBrush(QBrush(QColor(34, 197, 94, 255)))
-            painter.setPen(QPen(QColor(255, 255, 255), 1))
-            painter.drawEllipse(67, 47, 6, 9)
-            painter.drawRect(68, 56, 4, 4)
-            painter.drawRect(66, 60, 8, 2)
-        
-        # Trackpad - VISIBLE
+        # Trackpad
         painter.setBrush(QBrush(QColor(30, 41, 59)))
         painter.setPen(QPen(QColor(100, 116, 139), 1))
         painter.drawRoundedRect(55, 70, 30, 3, 1, 1)
         
         painter.restore()
         
-        # Status text - MUCH BRIGHTER
+        # Status text - SIMPLIFIED
         status_text = self.get_status_text()
-        painter.setPen(QPen(QColor(255, 255, 255)))  # Pure white
-        painter.setFont(QFont("Consolas", 12, QFont.Weight.Bold))
-        text_rect = painter.fontMetrics().boundingRect(status_text)
-        text_x = sprite_x + 175 - text_rect.width() // 2
-        text_y = sprite_y + 320
-        
-        # Bright background for text
-        painter.setBrush(QBrush(QColor(30, 41, 59, 230)))
-        painter.setPen(QPen(QColor(148, 163, 184), 3))
-        painter.drawRoundedRect(text_x - 15, text_y - 25, text_rect.width() + 30, 40, 20, 20)
-        
-        painter.setPen(QPen(QColor(255, 255, 255)))
-        painter.drawText(text_x, text_y, status_text)
+        if status_text:
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.setFont(QFont("Consolas", 10, QFont.Weight.Bold))
+            text_rect = painter.fontMetrics().boundingRect(status_text)
+            text_x = int(sprite_x + 70 * scale - text_rect.width() // 2)
+            text_y = int(sprite_y + 200)
+            
+            # Background for text
+            painter.setBrush(QBrush(QColor(30, 41, 59, 200)))
+            painter.setPen(QPen(QColor(148, 163, 184), 2))
+            painter.drawRoundedRect(text_x - 10, text_y - 20, text_rect.width() + 20, 30, 15, 15)
+            
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.drawText(text_x, text_y, status_text)
     
     def get_eye_scale(self):
         if self.emotion == 'thinking':
@@ -389,7 +513,7 @@ class KoreOverlay(QWidget):
         elif self.emotion == 'sad':
             return 1.0
         elif self.is_listening:
-            return 1.2  # Wide eyes when listening
+            return 1.2
         return 1.0
     
     def get_pupil_size(self):
@@ -400,7 +524,7 @@ class KoreOverlay(QWidget):
         elif self.emotion == 'sad':
             return 6
         elif self.is_listening:
-            return 3  # Small pupils when focused
+            return 3
         return 5
     
     def get_mouth_path(self):
@@ -430,14 +554,18 @@ class KoreOverlay(QWidget):
         return path
     
     def get_status_text(self):
+        # Don't show status text when there's a thought bubble
+        if self.current_thought:
+            return ""
+        
         if self.is_listening:
-            return ' LISTENING...'
+            return 'LISTENING...'
         elif self.is_speaking:
-            return ' SPEAKING...'
+            return 'SPEAKING...'
         elif self.emotion == 'thinking':
-            return ' THINKING...'
+            return 'THINKING...'
         elif self.emotion == 'happy':
-            return ' SUCCESS!'
+            return 'SUCCESS!'
         elif self.emotion == 'sad':
-            return ' FAILED'
-        return ' READY (Shift+Enter or Double-click!)'
+            return 'FAILED'
+        return 'Click: Chat | Double-click: Voice'
