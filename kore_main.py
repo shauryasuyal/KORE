@@ -20,7 +20,7 @@ from kore_control import (
     change_wallpaper
 )
 
-API_KEY = "AIzaSyDF08pS9foVBRpEpQpK7hp9vvqh1PvmKoE"
+API_KEY = "AIzaSyDjA8x7XGGo46jwiYOlhAc3wMXa80DdSCQ"
 
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-2.5-flash')
@@ -466,4 +466,5 @@ if __name__ == "__main__":
     thread = threading.Thread(target=logic_thread, daemon=True)
     thread.start()
     
+
     sys.exit(app.exec())
