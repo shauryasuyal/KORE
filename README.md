@@ -71,7 +71,7 @@ numpy
 
 Extra Avatar for KORE, made on Figma by [@ujjawalkishor](https://github.com/meltingboiling)- https://drive.google.com/drive/folders/1SCxKVxKrcTGfsqH3YHwJ6JdUi5SAqHSC?usp=sharing
 
-# DEMO
+## DEMO
 
 https://vimeo.com/manage/videos/1155688718
   
