@@ -28,14 +28,6 @@ The standout capability of Kore. It autonomously detects and resolves common sys
 * **GUI/Overlay:** [e.g., PyQt5]
 * **Automation:** [e.g., OS, Shuti]
 
-- **Natural Conversation** - Chat naturally or give direct commands  
-- **Voice Control** - Hands-free operation with speech recognition  
-- **Visual Feedback** - Animated sprite with emotions and status indicators  
-- **Deep System Access** - File operations, app launching, system monitoring  
-- **AI-Powered** - Uses Google Gemini for intelligent decision-making  
-- **Smart Automation** - Organize files, manage processes, change settings  
-- **Always Visible** - Transparent overlay that stays on top without being intrusive
-
 
 ## Installation
 ```
@@ -60,14 +52,20 @@ numpy
 
 
 ## Screenshots
-Overlay
+
+### Overlay
+
 ![App Screenshot](https://i.postimg.cc/NGVpwJQL/6d9293b2-309c-459b-b6bc-6eaf117770d1.png)
-Speech Recognition Active
+
+### Speech Recognition Active
+
 ![App Screenshot](https://i.postimg.cc/xjkBHbCd/5444ac09-6703-444a-9bc1-4ce0b678f09b.png)
-Fixing DLL issues ( Currently in Beta )
+
+### Fixing DLL issues ( Currently in Beta )
+
 ![App Screenshot](https://i.postimg.cc/13KdPGWT/Screenshot-2026-01-18-at-12-36-09-PM.png)
 
-NOT CURRENTLY ACTIVE IN THE PROGRAM
+### NOT CURRENTLY ACTIVE IN THE PROGRAM
 
 ![App Screenshot](https://i.postimg.cc/sfScCXWn/Whats-App-Image-2026-01-17-at-7-24-27-AM.jpg)
 
