@@ -6,6 +6,28 @@
 
 ## Features
 
+### Self-Healing System (Flagship Feature)
+The standout capability of Kore. It autonomously detects and resolves common system errors:
+- **DLL/Driver Fixes:** Identifies missing DLLs or corrupted drivers.
+- **Auto-Fetch:** Scrapes the web for the correct files.
+- **Auto-Install:** Downloads and places files in the correct system directories without user intervention.
+
+### Multimodal Interaction
+- **Voice & Text Control:** Talk to Kore like a friend, or type commands if you prefer silence.
+- **Natural Language Processing:** No need for robotic commands like "Open Application Chrome." Just say, "Hey, open up Chrome and find me a recipe for pasta."
+
+### OS-Level Automation
+- **Smart De-cluttering:** Automatically organizes messy desktops by segregating files into folders based on type (Images, Docs, Installers).
+- **Universal File Search:** Locates any file across the entire OS instantly.
+- **System Control:** Change wallpapers, adjust settings, and manage system apps on the fly.
+
+## Tech Stack
+* **Language:** Python
+* **AI/LLM:** 
+* **Voice/Audio:** [e.g., PyAudio, SpeechRecognition]
+* **GUI/Overlay:** [e.g., PyQt5]
+* **Automation:** [e.g., OS, Shuti]
+
 - **Natural Conversation** - Chat naturally or give direct commands  
 - **Voice Control** - Hands-free operation with speech recognition  
 - **Visual Feedback** - Animated sprite with emotions and status indicators  
