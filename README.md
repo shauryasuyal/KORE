@@ -26,7 +26,7 @@ The standout capability of Kore. It autonomously detects and resolves common sys
 * **AI/LLM:** 
 * **Voice/Audio:** [e.g., PyAudio, SpeechRecognition]
 * **GUI/Overlay:** [e.g., PyQt5]
-* **Automation:** [e.g., OS, Shuti]
+* **Automation:** [e.g., OS, Shutil]
 
 
 ## Installation
