@@ -60,6 +60,12 @@ numpy
 
 
 ## Screenshots
+Overlay
+![App Screenshot](https://i.postimg.cc/NGVpwJQL/6d9293b2-309c-459b-b6bc-6eaf117770d1.png)
+Speech Recognition Active
+![App Screenshot](https://i.postimg.cc/xjkBHbCd/5444ac09-6703-444a-9bc1-4ce0b678f09b.png)
+Fixing DLL issues ( Currently in Beta )
+![App Screenshot](https://i.postimg.cc/13KdPGWT/Screenshot-2026-01-18-at-12-36-09-PM.png)
 
 NOT CURRENTLY ACTIVE IN THE PROGRAM
 
