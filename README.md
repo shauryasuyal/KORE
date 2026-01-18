@@ -70,6 +70,10 @@ numpy
 ![App Screenshot](https://i.postimg.cc/sfScCXWn/Whats-App-Image-2026-01-17-at-7-24-27-AM.jpg)
 
 Extra Avatar for KORE, made on Figma by [@ujjawalkishor](https://github.com/meltingboiling)- https://drive.google.com/drive/folders/1SCxKVxKrcTGfsqH3YHwJ6JdUi5SAqHSC?usp=sharing
+
+# DEMO
+
+https://vimeo.com/manage/videos/1155688718
   
 
 ## Authors
