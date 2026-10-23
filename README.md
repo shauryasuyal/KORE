@@ -25,10 +25,11 @@ The standout capability of Kore. It autonomously detects and resolves common sys
 
 ## Tech Stack
 * **Language:** Python
-* **AI/LLM:** 
-* **Voice/Audio:** [e.g., PyAudio, SpeechRecognition]
-* **GUI/Overlay:** [e.g., PyQt5]
-* **Automation:** [e.g., OS, Shutil]
+* **AI/LLM:** Google Gemini (google-generativeai)
+* **Voice/Audio:** SpeechRecognition, PyAudio, pyttsx3
+* **GUI/Overlay:** PyQt6
+* **Automation:** pyautogui, pywinauto, psutil
+* **Vision:** OpenCV, NumPy
 
 
 ## Installation
