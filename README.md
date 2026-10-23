@@ -1,6 +1,8 @@
 
 # Kore
 
+> 🏆 The **OnDemand Track** version of Kore won at **brAInwave 2.0** (top 5 of 5,000+ participants). See [KORE-OnDemand](https://github.com/shauryasuyal/KORE-OnDemand).
+
 **Kore** is an advanced AI-powered desktop assistant for Windows that brings a friendly, intelligent companion to your computer. Combining natural language understanding with deep system integration, Kore can control your PC through simple conversations, whether typed or spoken
 
 
